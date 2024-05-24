@@ -7,14 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 
-#define TEST_NUM 10425
-#define TEST_PATH "test.hmc"
-
-void barrier()
-{
-    printf("\n");
-}
-
 int main(int argc, char *argv[])
 {
     int opt;
@@ -34,12 +26,6 @@ int main(int argc, char *argv[])
         case 'v':
             printf("Running helium in verbose mode.\n");
             verbose = 1;
-            break;
-        case 'f':
-            printf("filename : %s\n", optarg);
-            break;
-        case ':':
-            printf("option needs a value\n");
             break;
         case '?':
             printf("unknown option : %c\n", optopt);
