@@ -1,5 +1,4 @@
 #include "hmc.h"
-#include "helium.h"
 #include "lib.h"
 
 #include <stdio.h>
@@ -29,10 +28,10 @@ int unregistered(char c)
     return 0;
 }
 
-HmcProgram* hmc_parse_file(char *path)
+VMProgram* hmc_parse_file(char *path)
 {
     Instruction* code = NULL;
-    HmcProgram* program;
+    VMProgram* program;
     FILE* fd = fopen(path, "r");
     if(fd == NULL)
     {
@@ -129,38 +128,44 @@ HmcProgram* hmc_parse_file(char *path)
     }
     free(buff);
     fclose(fd);
-    program = malloc(sizeof(HmcProgram) * instructions);
-    program->code = code;
-    program->instructions = instructions;
+    program = malloc(sizeof(VMProgram) * instructions);
+    program->instructions = code;
+    program->num_instructions = instructions;
     return program;
 }
 
-void free_hmc_program(HmcProgram* program)
+void free_hmc_program(VMProgram* program)
 {
-    free(program->code);
+    free(program->instructions);
     free(program);
 }
 
-void load_hmc_program(HmcProgram* program)
-{
-    load_program(program->code, program->instructions);
-    free_hmc_program(program);
+void putint(int i, FILE* fptr) {
+    unsigned char* split = split_int(i);
+    for(int j = 0; j < 4; j++) {
+        fputc(split[j], fptr);
+        printf("Split: %d\n", split[j]);
+    }
+    free(split);
+}
+void create_machine_code_file(VMProgram* program, char* path) {
+    FILE* fptr = fopen(path, "w+");
+    Instruction instr;
+    for(int i = 0; i < program->num_instructions; i++) {
+        instr = program->instructions[i];
+        fputc(instr.opcode, fptr);
+        fputc(instr.x, fptr);
+        fputc(instr.y, fptr);
+    }
+    fclose(fptr);
 }
 
-void hmc_load_file(char* path)
-{
-    HmcProgram* program = hmc_parse_file(path);
-    load_hmc_program(program);
-}
-
-void print_hmc_program(char* path)
+void print_hmc_program(VMProgram* program)
 {
     // Primarily for spotting compiler issues
-    HmcProgram* program = hmc_parse_file(path);
-    for(int i = 0; i < program->instructions; i++)
+    for(int i = 0; i < program->num_instructions; i++)
     {
-        Instruction instr = program->code[i];
+        Instruction instr = program->instructions[i];
         printf("%d: (%u) %s %u %u\n", i, instr.opcode, parse_opcode(instr.opcode), instr.x, instr.y);
     }
-    free_hmc_program(program);
 }

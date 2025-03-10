@@ -2,13 +2,10 @@
 #define HMC_LIB
 #include "helium.h"
 
-typedef struct{
-    Instruction* code;
-    int instructions;
-} HmcProgram;
+void print_hmc_program(VMProgram* program);
 
-void hmc_load_file(char* path);
+VMProgram* hmc_parse_file(char *path);
 
-void print_hmc_program(char *path);
+void create_machine_code_file(VMProgram* program, char* path);
 
 #endif

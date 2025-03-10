@@ -2,6 +2,7 @@
 #include "lib.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 unsigned char mem[BYTES_RAM];
 unsigned int reg[NUM_REGISTERS];
@@ -68,14 +69,67 @@ int vm_instruction(Instruction *instr)
         break;
 
     default:
-        printf("Unrecognized instruction %d", opcode);
+        fprintf(stderr, "Unrecognized instruction %d", opcode);
         break;
     }
     return 0;
 }
 
-void load_program(Instruction* program, int num_instructions)
+void add_instr(Instruction* instructions, int num_instructions, Instruction instr) {
+}
+VMProgram parse_file(char* filename) {
+    FILE* fptr = fopen(filename, "r");
+    if (fptr == NULL) {
+        printf("File %s was unable to be opened. Exiting...\n", filename);
+        exit(1);
+    }
+    int c;
+    unsigned char parsed_c;
+    int i = 0;
+    int part = 0;
+
+    Instruction* instructions = malloc(INSTRUCTION_SIZE);
+    Instruction instr;
+    int num_instructions = 0;
+    size_t instruction_size = sizeof(instr);
+    while((c = fgetc(fptr)) != EOF) {
+        switch(i) {
+            case 0:
+                instr.opcode = c;
+                break;
+            case 1:
+                instr.x = c;
+                break;
+            case 2:
+                instr.y = c;
+                num_instructions++;
+                Instruction* p = realloc(instructions, num_instructions * instruction_size);
+                if(!p) {
+                    fprintf(stderr, "Instructions allocations failed. Terminating program.\n");
+                    free(instructions);
+                    fclose(fptr);
+                    exit(1);
+                } else {
+                    instructions = p;
+                    instructions[num_instructions - 1] = instr;
+                }
+                i = -1;
+                break;
+        }
+        i++;
+    }
+    fclose(fptr);
+    VMProgram program;
+    program.instructions = instructions;
+    program.num_instructions = num_instructions;
+    return program;
+}
+
+void load_program(VMProgram* program)
 {
+    int num_instructions = program->num_instructions;
+    Instruction* instructions = program->instructions;
+
     // Perform a check to see if the program will fit in the ram
     if(num_instructions * INSTRUCTION_SIZE > BYTES_RAM) // If the program exceeds the boundaries of the ram
     {
@@ -83,7 +137,7 @@ void load_program(Instruction* program, int num_instructions)
         return;
     }
     for(int i = 0; i < num_instructions; i++) {
-        Instruction instr = program[i];
+        Instruction instr = instructions[i];
 
         char opcode = instr.opcode;
         int x = instr.x;
@@ -101,6 +155,10 @@ void load_program(Instruction* program, int num_instructions)
             mem[mem_index + j + 5] = split_y[j];
     }
     program_size = num_instructions * INSTRUCTION_SIZE;
+}
+
+void free_vm_program(VMProgram* program) {
+    free(program->instructions);
 }
 
 void vm_clock(int cycles)

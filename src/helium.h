@@ -11,11 +11,20 @@ typedef struct{
     unsigned int y;
 } Instruction;
 
+typedef struct {
+    Instruction* instructions;
+    int num_instructions;
+} VMProgram;
+
 void vm_clock(int cycles);
 
 int vm_instruction(Instruction* instr);
 
-void load_program(Instruction* program, int num_instructions);
+VMProgram parse_file(char* filename);
+
+void load_program(VMProgram* program);
+
+void free_vm_program(VMProgram* program);
 
 void vm_print_memory();
 
