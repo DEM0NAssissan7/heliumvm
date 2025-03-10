@@ -1,0 +1,30 @@
+enum VarType{
+    Int,
+    Short,
+    Char,
+    Long
+};
+
+typedef struct {
+    char* name;
+    int address; // Address of the variable in memory
+    long value;
+    enum VarType type;
+    char is_signed;
+    int pointer;
+} Var;
+
+typedef struct Function {
+    char* name;
+    int start_address;
+    Var return_var;
+    Var* args; // an array of variables
+};
+
+/* The arguments of a function(arg) are variables that are already assigned in memory
+    with the respective types(and stay reserved). This is because helium only has 2 registers,
+    therefore, we must use the spaces in memory to store variables. These variables STAY in memory.
+
+    For return_var, we do the exact same thing: we store the result at a fixed place in memory and it
+    is a FIXED variable, just like any other variable. We prevent lefthand modification in the compiler itself.
+*/
