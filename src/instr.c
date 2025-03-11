@@ -8,6 +8,8 @@
 
 int num_instructions = 0;
 
+// Basic instructions
+
 Instruction* execute(Function f) {
 
 }
@@ -67,6 +69,49 @@ Instruction* set_value_const(Var* var, unsigned int num) {
     }
     num_instructions += byte_size;
     return instructions;
+}
+
+Instruction* load_variable(Var var, int register) {
+    // Grab a variable from memory and store it into a register
+    /* psuedo code
+    set 2 0
+
+    # begin loop
+    ld $(var.address + i)
+    add # register 1 is the current sum now
+
+    # if we are going to loop again
+    set 2 8
+    sl
+    mv 1 2 # move to register 2 so we can add it again
+    ...
+
+    # at the end
+    mv 1 $register
+    ...
+    */
+}
+
+Instruction* store_variable(Var var, int register) {
+    // Take the register and store the variable in memory
+    /*
+        mv $register 1
+        mv $register 3
+
+        # loop
+        set 2 ((size - i - 1) * 8)
+        sr
+        str $var.address[i]
+
+        # if we loop again
+        set 2 8
+        sl
+        mv 1 2
+        mv 3 1
+        sub
+        mv 1 3
+        ...
+    */
 }
 
 Instruction* minus(Var var_left, Var var_right, Var factor) {
