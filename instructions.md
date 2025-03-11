@@ -15,17 +15,17 @@
 ## Instructions
 ### SETID 0
 0. **nul**: NULL
-1. **add**: reg[0] = reg[0] + reg[1]
-2. **sub**: reg[0] = reg[0] - reg[1]
-3. **or**:  reg[0] = reg[0] || reg[1]
-4. **and**: reg[0] = reg[0] && reg[1]
-5. **sl**:  reg[0] = reg[0] << reg[1]
-6. **sr**:  reg[0] = reg[0] >> reg[1]
-7. **lt**: reg[0] = (reg[0] < reg[1])
-8. **jmp**: pc = reg[1]
-9. **cjp**: if(reg[0]) pc = reg[1]
+1. **add**: reg[1] = reg[1] + reg[2]
+2. **sub**: reg[1] = reg[1] - reg[2]
+3. **or**:  reg[1] = reg[1] || reg[2]
+4. **and**: reg[1] = reg[1] && reg[2]
+5. **sl**:  reg[1] = reg[1] << reg[2]
+6. **sr**:  reg[1] = reg[1] >> reg[2]
+7. **lt**: reg[1] = (reg[1] < reg[2])
+8. **jmp**: pc = reg[2]
+9. **cjp**: if(reg[1]) pc = reg[2]
 10. **set**: reg[x] = y
 11. **mv**: reg[y] = reg[x]
-12. **ld**: reg[y] = mem[x]
-13. **str**: mem[x] = reg[0]
+12. **ld**: reg[1] = mem[x]
+13. **str**: mem[x] = reg[1]
 14. **hlt**: HALT

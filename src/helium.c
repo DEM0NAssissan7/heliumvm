@@ -15,39 +15,40 @@ int vm_instruction(Instruction *instr)
     char opcode = instr->opcode;
     unsigned int x = instr->x;
     unsigned int y = instr->y;
+    reg[0] = pc; // Readonly pc register
 
     switch (opcode)
     {
     case 0: // nul
         return 0;
     case 1: // add
-        reg[0] = reg[0] + reg[1];
+        reg[1] = reg[1] + reg[2];
         break;
     case 2: // sub
-        reg[0] = reg[0] - reg[1];
+        reg[1] = reg[1] - reg[2];
         break;
     case 3: // or
-        reg[0] = reg[0] || reg[1];
+        reg[1] = reg[1] || reg[2];
         break;
     case 4: // and
-        reg[0] = reg[0] && reg[1];
+        reg[1] = reg[1] && reg[2];
         break;
     case 5: // sl
-        reg[0] = reg[0] << reg[1];
+        reg[1] = reg[1] << reg[2];
         break;
     case 6: // sr
-        reg[0] = reg[0] >> reg[1];
+        reg[1] = reg[1] >> reg[2];
         break;
     case 7: // lt
-        reg[0] = reg[0] < reg[1];
+        reg[1] = reg[1] < reg[2];
         break;
     case 8: // jmp
-        pc = reg[1];
+        pc = reg[2];
         return 1;
     case 9: // cjp
-        if (reg[0])
+        if (reg[1])
         {
-            pc = reg[1];
+            pc = reg[2];
             return 1;
         }
         break;
@@ -58,10 +59,10 @@ int vm_instruction(Instruction *instr)
         reg[y] = reg[x];
         break;
     case 12: // ld
-        reg[y] = mem[x];
+        reg[1] = mem[x];
         break;
     case 13: // str
-        mem[x] = reg[0];
+        mem[x] = reg[1];
         break;
     case 14: // hlt
         printf("Halted program!\n");
