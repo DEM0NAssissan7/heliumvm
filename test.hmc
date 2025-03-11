@@ -1,14 +1,14 @@
 set 1 1
 add # Increment
-mv 0 2 # Store for future use
-mv 0 1 # 9 < [x]
-set 0 99 # [9] < x
+mv 1 3 # Store for future use
+mv 1 2 # 9 < [x]
+set 1 99 # [9] < x
 lt # If less than
-set 1 11 # Prepare jump
+set 2 11 # Prepare jump
 cjp # Jump if more than 10
-mv 2 0
-set 1 0
+mv 3 1
+set 2 1
 jmp
-mv 2 0
+mv 3 0
 str 100
 hlt
