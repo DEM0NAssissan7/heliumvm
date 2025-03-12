@@ -160,6 +160,54 @@ void create_machine_code_file(VMProgram* program, char* path) {
     fclose(fptr);
 }
 
+// Ramdisk creation
+
+unsigned char* create_program_ramdisk(VMProgram* program) {
+    unsigned char* ramdisk = malloc(program->num_instructions * INSTRUCTION_SIZE);
+    Instruction instr;
+    int index;
+    unsigned char* splitX;
+    unsigned char* splitY;
+    for(int i = 0; i < program->num_instructions; i++) {
+        instr = program->instructions[i];
+        index = i * INSTRUCTION_SIZE;
+        ramdisk[index + 0] = instr.opcode;
+        splitX = split_int(instr.x);
+        ramdisk[index + 1] = splitX[0];
+        ramdisk[index + 2] = splitX[1];
+        ramdisk[index + 3] = splitX[2];
+        ramdisk[index + 4] = splitX[3];
+        splitY = split_int(instr.y);
+        ramdisk[index + 5] = splitY[0];
+        ramdisk[index + 6] = splitY[1];
+        ramdisk[index + 7] = splitY[2];
+        ramdisk[index + 8] = splitY[3];
+        free(splitX);
+        free(splitY);
+    }
+    return ramdisk;
+}
+unsigned int* consolidate_char_array(char* array, int size) {
+    unsigned int* retval = malloc(size);
+    unsigned char* int_parts = malloc(4); // 4 x 4
+    for(int i = 0; i < size; i+=4) {
+        int_parts[3] = array[i + 0];
+        int_parts[2] = array[i + 1];
+        int_parts[1] = array[i + 2];
+        int_parts[0] = array[i + 3];
+        retval[i / 4] = combine_int(int_parts);
+    }
+    free(int_parts);
+    return retval;
+}
+
+void write_ramdisk_to_file(unsigned char* ramdisk, int array_size, char* filename) {
+    FILE* fptr = fopen(filename, "w+");
+    for(int i = 0; i < array_size; i++)
+        fputc((int) ramdisk[i], fptr);
+    fclose(fptr);
+}
+
 void print_hmc_program(VMProgram* program)
 {
     // Primarily for spotting compiler issues

@@ -43,9 +43,8 @@ int main(int argc, char *argv[])
     // which are not parsed
     for (; optind < argc; optind++)
     {
-        VMProgram program = parse_file(argv[optind]);
-        load_program(&program);
-        free_vm_program(&program);
+        Ramdisk ramdisk = parse_file_ramdisk(argv[optind]);
+        load_ramdisk(ramdisk.data, ramdisk.byte_size);
         vm_clock(cycles);
         if (show_mem)
         {

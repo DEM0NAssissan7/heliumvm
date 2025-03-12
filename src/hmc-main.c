@@ -34,7 +34,10 @@ int main(int argc, char *argv[])
     for (; optind < argc; optind++)
     {
         VMProgram* program = hmc_parse_file(argv[optind]);
-        create_machine_code_file(program, output_file);
+        int byte_size = program->num_instructions * INSTRUCTION_SIZE;
+        unsigned char* ramdisk = create_program_ramdisk(program);
+        // unsigned int* cons_ramdisk = consolidate_char_array(ramdisk, byte_size);
+        write_ramdisk_to_file(ramdisk, byte_size, output_file);
         if(verbose)
         {
             VMProgram output_program = parse_file(output_file);

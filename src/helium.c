@@ -78,6 +78,52 @@ int vm_instruction(Instruction *instr)
 
 void add_instr(Instruction* instructions, int num_instructions, Instruction instr) {
 }
+
+void load_ramdisk(unsigned char* ramdisk, int length) {
+    if(length > BYTES_RAM) {
+        fprintf(stderr, "Cannot load ramdisk: not enough ram (ramdisk: %d, VM ram: %d)\n", length, BYTES_RAM);
+    }
+    for(int i = 0; i < length; i++)
+        mem[i] = ramdisk[i];
+}
+unsigned char* expand_consolidated(unsigned int* array, int byte_size) {
+    unsigned char* retval = malloc(byte_size);
+    unsigned char* split = malloc(4);
+    for(int i = 0; i < byte_size; i+=4) {
+        split = split_int(array[i / 4]);
+        retval[i + 3] = split[0];
+        retval[i + 2] = split[1];
+        retval[i + 1] = split[2];
+        retval[i + 0] = split[3];
+    }
+    free(split);
+    return retval;
+}
+
+Ramdisk parse_file_ramdisk(char* filename) {
+    FILE* fptr = fopen(filename, "r");
+    if (fptr == NULL) {
+        printf("File %s was unable to be opened. Exiting...\n", filename);
+        exit(1);
+    }
+    int c;
+    int i = 0;
+
+    unsigned char* buff = malloc(0);
+    while((c = fgetc(fptr)) != EOF) {
+        buff = realloc(buff, (i + 1) * 4);
+        buff[i] = c;
+        i++;
+    }
+    fclose(fptr);
+    // unsigned char* memdisk = expand_consolidated(buff, i * 4);
+    Ramdisk retval;
+    // retval.data = memdisk;
+    retval.data = buff;
+    retval.byte_size = i * 4;
+    return retval;
+}
+
 VMProgram parse_file(char* filename) {
     FILE* fptr = fopen(filename, "r");
     if (fptr == NULL) {

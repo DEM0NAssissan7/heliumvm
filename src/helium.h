@@ -16,11 +16,20 @@ typedef struct {
     int num_instructions;
 } VMProgram;
 
+typedef struct {
+    unsigned char* data;
+    int byte_size;
+} Ramdisk;
+
 void vm_clock(int cycles);
 
 int vm_instruction(Instruction* instr);
 
 VMProgram parse_file(char* filename);
+
+Ramdisk parse_file_ramdisk(char* filename);
+
+void load_ramdisk(unsigned char* ramdisk, int length);
 
 void load_program(VMProgram* program);
 
