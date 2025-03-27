@@ -8,7 +8,7 @@
 char* token_map[] = {
     "nul",
     "add",
-    "sub",
+    "flp",
     "or",
     "and",
     "sl",

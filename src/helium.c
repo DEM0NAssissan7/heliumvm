@@ -24,8 +24,8 @@ int vm_instruction(Instruction *instr)
     case 1: // add
         reg[1] = reg[1] + reg[2];
         break;
-    case 2: // sub
-        reg[1] = reg[1] - reg[2];
+    case 2: // flp
+        reg[1] = ~reg[1];
         break;
     case 3: // or
         reg[1] = reg[1] || reg[2];

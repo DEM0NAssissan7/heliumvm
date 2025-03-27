@@ -16,7 +16,7 @@
 ### SETID 0
 0. **nul**: NULL
 1. **add**: reg[1] = reg[1] + reg[2]
-2. **sub**: reg[1] = reg[1] - reg[2]
+2. **flp**: reg[1] = ~reg[1]
 3. **or**:  reg[1] = reg[1] || reg[2]
 4. **and**: reg[1] = reg[1] && reg[2]
 5. **sl**:  reg[1] = reg[1] << reg[2]
