@@ -1,3 +1,8 @@
+#include "helium.h"
+
+#ifndef VARS_H
+#define VARS_H
+
 enum VarType{
     Int,
     Short,
@@ -7,7 +12,6 @@ enum VarType{
 typedef struct {
     char* name;
     int address; // Address of the variable in memory
-    char* split;
     enum VarType type;
     char is_signed;
     int pointer;
@@ -18,7 +22,11 @@ typedef struct {
     int start_address;
     Var return_var;
     Var* args; // an array of variables
+    int num_args;
+    VMProgram program;
 } Function;
+
+#endif
 
 /* The arguments of a function(arg) are variables that are already assigned in memory
     with the respective types(and stay reserved). This is because helium only has 2 registers,

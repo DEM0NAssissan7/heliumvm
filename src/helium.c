@@ -20,6 +20,7 @@ int vm_instruction(Instruction *instr)
     switch (opcode)
     {
     case 0: // nul
+        printf("Instruction at %d (%x) is NULL - this probably means the program is corrupted.\n", pc, pc);
         return 0;
     case 1: // add
         reg[1] = reg[1] + reg[2];
@@ -70,7 +71,7 @@ int vm_instruction(Instruction *instr)
         break;
 
     default:
-        fprintf(stderr, "Unrecognized instruction %d", opcode);
+        fprintf(stderr, "Unrecognized instruction %d\n", opcode);
         break;
     }
     return 0;
@@ -138,7 +139,6 @@ VMProgram parse_file(char* filename) {
     Instruction* instructions = malloc(INSTRUCTION_SIZE);
     Instruction instr;
     int num_instructions = 0;
-    size_t instruction_size = sizeof(instr);
     while((c = fgetc(fptr)) != EOF) {
         switch(i) {
             case 0:
@@ -150,7 +150,7 @@ VMProgram parse_file(char* filename) {
             case 2:
                 instr.y = c;
                 num_instructions++;
-                Instruction* p = realloc(instructions, num_instructions * instruction_size);
+                Instruction* p = realloc(instructions, num_instructions * INSTRUCTION_SIZE);
                 if(!p) {
                     fprintf(stderr, "Instructions allocations failed. Terminating program.\n");
                     free(instructions);
@@ -178,9 +178,9 @@ void load_program(VMProgram* program)
     Instruction* instructions = program->instructions;
 
     // Perform a check to see if the program will fit in the ram
-    if(num_instructions * INSTRUCTION_SIZE > BYTES_RAM) // If the program exceeds the boundaries of the ram
+    if(num_instructions * VM_INSTRUCTION_SIZE > BYTES_RAM) // If the program exceeds the boundaries of the ram
     {
-        fprintf(stderr, "Loading program failed. Program of size %d exceeds ram limit of %d bytes.\n", num_instructions * INSTRUCTION_SIZE, BYTES_RAM);
+        fprintf(stderr, "Loading program failed. Program of size %d exceeds ram limit of %d bytes.\n", num_instructions * VM_INSTRUCTION_SIZE, BYTES_RAM);
         return;
     }
     for(int i = 0; i < num_instructions; i++) {
@@ -189,7 +189,7 @@ void load_program(VMProgram* program)
         char opcode = instr.opcode;
         int x = instr.x;
         int y = instr.y;
-        int mem_index = i * INSTRUCTION_SIZE;
+        int mem_index = i * VM_INSTRUCTION_SIZE;
 
         mem[mem_index] = opcode;
 
@@ -201,7 +201,7 @@ void load_program(VMProgram* program)
         for(int j = 0; j < 4; j++)
             mem[mem_index + j + 5] = split_y[j];
     }
-    program_size = num_instructions * INSTRUCTION_SIZE;
+    program_size = num_instructions * VM_INSTRUCTION_SIZE;
 }
 
 void free_vm_program(VMProgram* program) {
@@ -214,7 +214,7 @@ void vm_clock(int cycles)
     {
         runs++;
         // What happens in one clock cycle
-        int mem_index = pc * INSTRUCTION_SIZE;
+        int mem_index = pc;
         Instruction instr;
 
         instr.opcode = mem[mem_index]; // Get opcode
@@ -230,11 +230,12 @@ void vm_clock(int cycles)
         instr.y = combine_int(y_parts);
 
         int flag = vm_instruction(&instr);
+        if(pc > BYTES_RAM) return;
 
         switch(flag)
         {
             case 0:
-                pc++;
+                pc+=VM_INSTRUCTION_SIZE;
                 break;
             case 1:
                 continue;
@@ -261,7 +262,7 @@ void vm_print_info()
     printf("PC: %llu\nRuns: %llu\nProgram Size: %llu bytes (%llu instructions)\nRAM: %dKB (%d bytes)\nRegisters: %d\n",  pc,
                                                                             runs,
                                                                             program_size,
-                                                                            program_size / INSTRUCTION_SIZE,
+                                                                            program_size / VM_INSTRUCTION_SIZE,
                                                                             KILOBYTES_RAM,
                                                                             BYTES_RAM,
                                                                             NUM_REGISTERS);

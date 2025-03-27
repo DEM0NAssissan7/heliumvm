@@ -3,7 +3,8 @@
 #define KILOBYTES_RAM 4
 #define NUM_REGISTERS 6
 #define BYTES_RAM KILOBYTES_RAM * 1024
-#define INSTRUCTION_SIZE 9
+#define INSTRUCTION_SIZE sizeof(Instruction)
+#define VM_INSTRUCTION_SIZE 9
 
 typedef struct{
     char opcode;

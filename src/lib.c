@@ -112,6 +112,10 @@ unsigned int binary_to_int(char* string, int length) {
 
 unsigned char* split_int(unsigned int number){ // Split an integer into 4 8-bit chars
     unsigned char* retval = malloc(4);
+    if(retval == NULL) {
+        fprintf(stderr, "Split int allocation failed.\n");
+        exit(1);
+    }
 
     char* binary = int_to_binary(number); // Convert to binary
     char* split_binary[4];
@@ -122,8 +126,10 @@ unsigned char* split_int(unsigned int number){ // Split an integer into 4 8-bit 
     }
     free(binary);
 
-    for(int i = 0; i < 4; i++) // Turn all binary back into decimal
+    for(int i = 0; i < 4; i++){// Turn all binary back into decimal
         retval[i] = binary_to_int(split_binary[i], 8);
+        free(split_binary[i]);
+    }
     return retval;
 };
 

@@ -111,7 +111,7 @@ VMProgram* hmc_parse_file(char *path)
 
             instructions++;
 
-            code = realloc(code, sizeof(Instruction) * instructions);
+            code = realloc(code, INSTRUCTION_SIZE * instructions);
             code[instructions - 1] = instr;
 
             i = 0;
@@ -128,7 +128,7 @@ VMProgram* hmc_parse_file(char *path)
     }
     free(buff);
     fclose(fd);
-    program = malloc(sizeof(VMProgram) * instructions);
+    program = malloc(sizeof(VMProgram));
     program->instructions = code;
     program->num_instructions = instructions;
     return program;
@@ -148,29 +148,18 @@ void putint(int i, FILE* fptr) {
     }
     free(split);
 }
-void create_machine_code_file(VMProgram* program, char* path) {
-    FILE* fptr = fopen(path, "w+");
-    Instruction instr;
-    for(int i = 0; i < program->num_instructions; i++) {
-        instr = program->instructions[i];
-        fputc(instr.opcode, fptr);
-        fputc(instr.x, fptr);
-        fputc(instr.y, fptr);
-    }
-    fclose(fptr);
-}
 
 // Ramdisk creation
 
 unsigned char* create_program_ramdisk(VMProgram* program) {
-    unsigned char* ramdisk = malloc(program->num_instructions * INSTRUCTION_SIZE);
+    unsigned char* ramdisk = calloc(program->num_instructions, VM_INSTRUCTION_SIZE);
     Instruction instr;
     int index;
     unsigned char* splitX;
     unsigned char* splitY;
     for(int i = 0; i < program->num_instructions; i++) {
         instr = program->instructions[i];
-        index = i * INSTRUCTION_SIZE;
+        index = i * VM_INSTRUCTION_SIZE;
         ramdisk[index + 0] = instr.opcode;
         splitX = split_int(instr.x);
         ramdisk[index + 1] = splitX[0];

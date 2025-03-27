@@ -10,14 +10,14 @@ out/hmc: src/hmc.c src/hmc.h src/hmc-main.c src/lib.h src/lib.c src/helium.c src
 	mkdir -p out && echo "*" > out/.gitignore
 	$(compiler) src/hmc.c src/helium.c src/lib.c src/hmc-main.c -g -o out/hmc -lm
 
-out/hcc:
+out/hlc:
 	mkdir -p out && echo "*" > out/.gitignore
-	$(compiler)
+	$(compiler) src/compiler.c src/vars.c src/instr.c src/helium.c src/lib.c src/hmc.c src/hlc-main.c -g -o out/hlc -lm
 
 all:
 	make out/helium
 	make out/hmc
-	make out/hcc
+	make out/hlc
 
 clean:
 	rm -rf out
