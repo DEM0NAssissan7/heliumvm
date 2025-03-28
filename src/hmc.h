@@ -1,12 +1,11 @@
 #ifndef HMC_LIB
 #define HMC_LIB
-#include "helium.h"
+
+#include "programs.h"
 
 void print_hmc_program(VMProgram* program);
 
 VMProgram* hmc_parse_file(char *path);
-
-unsigned char* create_program_ramdisk(VMProgram* program);
 
 unsigned int* consolidate_char_array(char* array, int size);
 

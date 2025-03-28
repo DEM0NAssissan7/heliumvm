@@ -29,7 +29,6 @@ variable memory
 #include "compiler.h"
 #include "vars.h"
 #include "instr.h"
-#include "helium.h"
 #include "hmc.h"
 
 #include <stdlib.h>
@@ -41,7 +40,7 @@ unsigned char* prgmem;
 
 void init_mem() {
     prgmem = malloc(0);
-    insert_instructions(init_hook(0));
+    insert_code(init_hook(0));
 }
 
 void write_prgmem_file(char* filename) {
@@ -74,14 +73,14 @@ void alloc_function(Function* f) {
         alloc_variable(&f->args[i]);
     }
     f->start_address = current_address;
-    insert_instructions(&f->program);
+    insert_code(&f->program);
 }
 
 void set_hook() {
     set_hook_pointer(prgmem, current_address);
 }
 
-void insert_instructions(VMProgram* p) {
+void insert_code(VMProgram* p) {
     int size = p->num_instructions * VM_INSTRUCTION_SIZE;
     unsigned char* code = create_program_ramdisk(p);
     free(p->instructions);
@@ -93,4 +92,18 @@ void insert_instructions(VMProgram* p) {
     }
     free(code);
     current_address += size;
+}
+
+void insert_instruction(char opcode, int x, int y) {
+    Instruction instr;
+    instr.opcode = opcode;
+    instr.x = x;
+    instr.y = y;
+
+    VMProgram* p = malloc(sizeof(VMProgram));
+    p->instructions = malloc(INSTRUCTION_SIZE);
+    p->instructions[0] = instr;
+    p->num_instructions = 1;
+
+    insert_code(p);
 }

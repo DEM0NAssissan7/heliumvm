@@ -1,4 +1,4 @@
-#include "helium.h"
+#include "programs.h"
 
 #ifndef VARS_H
 #define VARS_H

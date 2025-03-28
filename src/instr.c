@@ -1,210 +1,132 @@
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 
-#include "helium.h"
 #include "lib.h"
-
 #include "instr.h"
 #include "vars.h"
 #include "hmc.h"
-
-// Helper functions
-Instruction mkinstr(int opcode, int x, int y) {
-    Instruction instr;
-    instr.opcode = opcode;
-    instr.x = x;
-    instr.y = y;
-    return instr;
-}
-
-int expand_program(VMProgram* p, int i) {
-    int retval = p->num_instructions;
-    p->num_instructions += i;
-    p->instructions = realloc(p->instructions, p->num_instructions * INSTRUCTION_SIZE);
-    if(p->instructions == NULL) {
-        fprintf(stderr, "Allocation failed\n");
-        exit(1);
-    }
-    // Returns the program size from BEFORE the expansion
-    return retval;
-}
-
-void append_instructions(VMProgram* source, VMProgram* target) {
-    // we need to reallocate the array before appending to it
-    
-    int index = expand_program(target, source->num_instructions);
-    for(int i = 0; i < source->num_instructions; i++) {
-        target->instructions[index + i] = source->instructions[i];
-    }
-
-    // Source memory cleanup
-    source->num_instructions = -1;
-    free(source->instructions);
-    free(source);
-}
-
-VMProgram* create_program_array(int instr_count) {
-    VMProgram* retval = malloc(sizeof(VMProgram));
-    if(retval == NULL) {
-        fprintf(stderr, "Failed to create program array: return pointer allocation failed.\n");
-        exit(1);
-    }
-    retval->instructions = malloc(instr_count * INSTRUCTION_SIZE);
-    if(retval->instructions == NULL) {
-        fprintf(stderr, "Failed to create program array: instruction allocation failed.\n");
-        exit(1);
-    }
-    retval->num_instructions = instr_count;
-    return retval;
-}
+#include "programs.h"
 
 // Basic instructions
 
 VMProgram* execute(Function* f) {
-    /* psuedo code
-    set 2 (f.address)
-    jmp
-    */
-   VMProgram* p = create_program_array(2);
-   p->instructions[0] = mkinstr(10, 2, f->start_address); // set
-   p->instructions[1] = mkinstr(8, 0, 0); // jmp
+   VMProgram* p = create_program_array();
+
+   mkinstr(p, SET, 2, f->start_address);
+   mkinstr(p, JMP, 0, 0);
    return p;
 }
 
-VMProgram* twc(int reg) {
-    /* Psuedo
-    
-    mv $register 1
-    set 2 1
-    flp
-    add
-    mv 1 $register
-    */
+VMProgram* twc1() { // Mutates 2, 1 -> 1
+    VMProgram* p = create_program_array();
 
-    VMProgram* p = create_program_array(5);
-    p->instructions[0] = mkinstr(11, reg, 1);
-    p->instructions[1] = mkinstr(10, 2, 1);
-    p->instructions[2] = mkinstr(2, 0, 0);
-    p->instructions[3] = mkinstr(1, 0, 0);
-    p->instructions[3] = mkinstr(11, 1, reg);
+    mkinstr(p, FLP, 0, 0);
+    mkinstr(p, SET, 2, 1);
+    mkinstr(p, ADD, 0, 0);
+    return p;
+
+}
+VMProgram* twc(int reg) { // Mutates 1, 2 -> reg
+    VMProgram* p = create_program_array();
+
+    mkinstr(p, MV, reg, 1);
+    addfunc(p, twc1());
+    mkinstr(p, MV, 1, reg);
+    return p;
+}
+VMProgram* sub_registers(int reg_positive, int reg_negative) { // reg[1] = reg[reg_positive] - reg[reg_negative]
+    // Mutates 1, 2 -> 1
+    VMProgram* p = create_program_array();
+
+    mkinstr(p, MV, reg_positive, 1);
+    addfunc(p, twc1());
+    mkinstr(p, MV, reg_negative, 2);
+    mkinstr(p, ADD, 0, 0);
+    addfunc(p, twc1()); // Flip back output to normal from 2's
+    // Result is in register 1
     return p;
 }
 
 VMProgram* set_value(Var* var_left, Var* var_right) {
-    /* psuedo code
-        ld $var_right.addr[+ i]
-        str $var_left.addr[+ i]
-    */
     if(!is_same_type(var_left, var_right)) {
         fprintf(stderr, "Variables are not the same type\n");
         return NULL;
     }
 
     int var_size = varsize(var_left);
-    VMProgram* p = create_program_array(var_size * 2);
+    VMProgram* p = create_program_array();
     for(int i = 0; i < var_size; i++) {
-        p->instructions[i*2] = mkinstr(12, var_right->address + i, 0); // ld
-        p->instructions[i*2 + 1] = mkinstr(13, var_left->address + i, 0);// str
+        mkinstr(p, LD, var_right->address + i, 0); // ld
+        mkinstr(p, STR, var_left->address + i, 0);// str
     }
     return p;
 }
 
-VMProgram* set_value_const(Var* var, unsigned int num) {
-    /* Psuedo Code
-    set 1 $num.1
-    str $var.address
-    set 1 $num.2
-    str $(var.address + 1)
-    ...
-    */
-    int var_size = varsize(var);
-    VMProgram* p = create_program_array(var_size * 2);
-    unsigned char* split = split_int(num);
-    for(int i = 0; i < var_size; i++) {
-        p->instructions[i*2] = mkinstr(10, 1, split[i]); // set
-        p->instructions[i*2 + 1] = mkinstr(13, var->address + i, 0); // str
-    }
+VMProgram* set_value_const(Var* var, int num) {
+    VMProgram* p = create_program_array();
+
+    mkinstr(p, SET, 5, num);
+    addfunc(p, store_variable(var, 5));
+
+    // int var_size = varsize(var);
+    // unsigned char* split = split_int(num);
+    // for(int i = 0; i < var_size; i++) {
+    //     mkinstr(p, SET, 1, split[i]); // set
+    //     mkinstr(p, STR, var->address + i, 0); // str
+    // }
     return p;
 }
 
 VMProgram* load_variable(Var* var, int reg) {
     // Grab a variable from memory and store it into a register
-    /* psuedo code
-    set 2 0
 
-    # begin loop
-    ld $(var.address + i)
-    add # register 1 is the current sum now
-
-    # if we are going to loop again
-    set 2 8
-    sl
-    mv 1 2 # move to register 2 so we can add it again
-    ...
-
-    # at the end
-    mv 1 $register
-    ...
-    */
     int var_size = varsize(var);
     int instr_count = 2 + 2 * var_size + 3 * (var_size - 1);
-    VMProgram* p = create_program_array(instr_count);
+    VMProgram* p = create_program_array();
     
-    p->instructions[0] = mkinstr(10, 2, 0); // set
-    int offset = 1;
+
+    mkinstr(p, SET, 2, 0);
     for(int i = 0; i < var_size; i++) {
-        int index = i * 5 + offset;
-        p->instructions[index + 0] = mkinstr(12, var->address + i, 0); // ld
-        p->instructions[index + 1] = mkinstr(1, 0, 0); // add
+        mkinstr(p, LD, var->address + i, 0);
+        mkinstr(p, ADD, 0, 0); // register 1 is the current sum now
         if(i + 1 >= var_size) break;
-        p->instructions[index + 2] = mkinstr(10, 2, 8); // set
-        p->instructions[index + 3] = mkinstr(5, 0, 0); // sl
-        p->instructions[index + 4] = mkinstr(11, 1, 2); // mv
+        mkinstr(p, SET, 2, 8);
+        mkinstr(p, SL, 0, 0);
+        mkinstr(p, MV, 1, 2); // move to register 2 so we can add it again
     }
-    p->instructions[instr_count - 1] = mkinstr(11, 1, reg); // mv to target register
+    mkinstr(p, MV, 1, reg); // mv to target register
     return p;
 }
 
 VMProgram* store_variable(Var* var, int reg) {
+    // Mutates 1,2,3
     // Take the register and store the variable in memory
-    /*
-        mv $register 1
-        mv $register 3
+    int size = varsize(var);
+    VMProgram* p = create_program_array();
 
-        # loop
-        set 2 ((varsize - i - 1) * 8)
-        sr
-        str $var.address[i]
+    mkinstr(p, MV, reg, 1);
+    mkinstr(p, MV, reg, 3);
 
-        # if we loop again
-        set 2 8
-        sl
-        mv 1 2
-        mv 3 1
-        sub
-        mv 1 3
-        ...
-    */
-    int var_size = varsize(var);
-    int instr_count = 2 + 3 * var_size + 6 * (var_size - 1);
-    VMProgram* p = create_program_array(instr_count);
+    int shift;
+    for(int i = 0; i < size; i++) {
+        shift = 8 * (size - i - 1);
 
-    p->instructions[0] = mkinstr(11, reg, 1);
-    p->instructions[1] = mkinstr(11, reg, 3);
+        mkinstr(p, SET, 2, shift);
+        mkinstr(p, SR, 0, 0); // Right shift to get byte element value
+        mkinstr(p, STR, var->address + i, 0); // put byte value in proper address
 
-    int offset = 2;
-    for(int i = 0; i < var_size; i++) {
-        int index = i * 9 + offset;
-        p->instructions[index + 0] = mkinstr(10, 2, (var_size - i - 1) * 8); // set
-        p->instructions[index + 1] = mkinstr(6, 0, 0); // sr
-        p->instructions[index + 2] = mkinstr(13, var->address + i, 0); // str
-        if(i + 1 >= var_size) break;
-        p->instructions[index + 3] = mkinstr(10, 2, 8); // set
-        p->instructions[index + 4] = mkinstr(5, 0, 0); // sl
-        p->instructions[index + 5] = mkinstr(11, 1, 2); // mv
-        p->instructions[index + 6] = mkinstr(11, 3, 1); // mv
-        p->instructions[index + 7] = mkinstr(2, 0, 0); // sub
-        p->instructions[index + 8] = mkinstr(11, 1, 3); // mv
+        if(shift <= 0) break; // Optimization to prevent unnecessary shifting when shift is zero
+        
+        mkinstr(p, SET, 2, shift);
+        mkinstr(p, SL, 0, 0); // Shift byte element value left to get element actual value
+        
+        mkinstr(p, MV, 1, 6); // This was the cause of a lot of headache. This line basically prevents a bug in sub_registers
+        //where register 1 is assigned and then reassigned during execution specifically if reg_negative = 1
+        mkinstr(p, MV, 3, 7); // Uses reserve registers to circumvent sub_registers() bullshit
+
+        addfunc(p, sub_registers(7, 6)); // subtract by the current sum to get leftover total
+        mkinstr(p, MV, 1, 3); // Make this the new element actual value
     }
     return p;
 }
@@ -212,23 +134,19 @@ VMProgram* store_variable(Var* var, int reg) {
 // Complex functions
 
 VMProgram* var_single_operation(Var* result_var, Var* var1, Var* var2, int operation) {
-    VMProgram* p = create_program_array(0);
+    VMProgram* p = create_program_array();
     if(!is_same_type(var1, var2) || !is_same_type(result_var, var1)) {
         fprintf(stderr, "Operation failed: variables are not the same type\n");
         return NULL;
     }
 
-    append_instructions(load_variable(var1, 4), p);
-    append_instructions(load_variable(var2, 5), p);
-    
-
-    int after_index = expand_program(p, 4);
-    p->instructions[after_index + 0] = mkinstr(11, 4, 1); // mv
-    p->instructions[after_index + 1] = mkinstr(11, 5, 2); // mv
-    p->instructions[after_index + 2] = mkinstr(operation, 0, 0); // operation
-    p->instructions[after_index + 3] = mkinstr(11, 1, 5); // mv
-
-    append_instructions(store_variable(result_var, 5), p);
+    addfunc(p, load_variable(var1, 4));
+    addfunc(p, load_variable(var2, 5));
+    mkinstr(p, MV, 4, 1);
+    mkinstr(p, MV, 5, 2);
+    mkinstr(p, operation, 0, 0);
+    mkinstr(p, MV, 1, 4);
+    addfunc(p, store_variable(result_var, 4));
     return p;
 }
 
@@ -238,20 +156,13 @@ VMProgram* add(Var* var_left, Var* var1, Var* var2) {
 }
 
 VMProgram* subtract(Var* var_left, Var* positive, Var* negative) {
-    VMProgram* p = create_program_array(0);
-    append_instructions(load_variable(negative, 4), p);
-    append_instructions(twc(4), p);
-    append_instructions(load_variable(positive, 5), p);
-    int index = expand_program(p, 3);
-    /* Psuedo code 
-    
-    mv 4 1
-    mv 5 2
-    add
-    */
-    p->instructions[index + 0] = mkinstr(11, 4, 1);
-    p->instructions[index + 1] = mkinstr(11, 5, 2);
-    p->instructions[index + 2] = mkinstr(11, 5, 2);
+    VMProgram* p = create_program_array();
+
+    addfunc(p, load_variable(positive, 4));
+    addfunc(p, load_variable(negative, 5));
+    addfunc(p, sub_registers(4, 5));
+    mkinstr(p, MV, 1, 4);
+    addfunc(p, store_variable(var_left, 4));
 
     return p;
 }
@@ -295,7 +206,7 @@ void set_hook_pointer(unsigned char* ramdisk, int address) {
 
 /* Ending hooks */
 VMProgram* halt() {
-    VMProgram* p = create_program_array(1);
-    p->instructions[0] = mkinstr(14, 0, 0);
+    VMProgram* p = create_program_array();
+    mkinstr(p, HLT, 0, 0);
     return p;
 }

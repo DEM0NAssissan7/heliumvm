@@ -1,5 +1,5 @@
 #include "vars.h"
-#include "helium.h"
+#include "programs.h"
 
 #ifndef COMPILER_H
 #define COMPILER_H
@@ -20,6 +20,8 @@ void alloc_function(Function* f);
 
 void set_hook();
 
-void insert_instructions(VMProgram* p);
+void insert_code(VMProgram* p);
+
+void insert_instruction(char opcode, int x, int y);
 
 #endif

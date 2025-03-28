@@ -35,10 +35,10 @@ int vm_instruction(Instruction *instr)
         reg[1] = reg[1] && reg[2];
         break;
     case 5: // sl
-        reg[1] = reg[1] << reg[2];
+        reg[1] = reg[1]<<reg[2];
         break;
     case 6: // sr
-        reg[1] = reg[1] >> reg[2];
+        reg[1] = reg[1]>>reg[2];
         break;
     case 7: // lt
         reg[1] = reg[1] < reg[2];
@@ -112,7 +112,7 @@ Ramdisk parse_file_ramdisk(char* filename) {
 
     unsigned char* buff = malloc(0);
     while((c = fgetc(fptr)) != EOF) {
-        buff = realloc(buff, (i + 1) * 4);
+        buff = realloc(buff, (i + 1));
         buff[i] = c;
         i++;
     }
@@ -121,91 +121,8 @@ Ramdisk parse_file_ramdisk(char* filename) {
     Ramdisk retval;
     // retval.data = memdisk;
     retval.data = buff;
-    retval.byte_size = i * 4;
+    retval.byte_size = i;
     return retval;
-}
-
-VMProgram parse_file(char* filename) {
-    FILE* fptr = fopen(filename, "r");
-    if (fptr == NULL) {
-        printf("File %s was unable to be opened. Exiting...\n", filename);
-        exit(1);
-    }
-    int c;
-    unsigned char parsed_c;
-    int i = 0;
-    int part = 0;
-
-    Instruction* instructions = malloc(INSTRUCTION_SIZE);
-    Instruction instr;
-    int num_instructions = 0;
-    while((c = fgetc(fptr)) != EOF) {
-        switch(i) {
-            case 0:
-                instr.opcode = c;
-                break;
-            case 1:
-                instr.x = c;
-                break;
-            case 2:
-                instr.y = c;
-                num_instructions++;
-                Instruction* p = realloc(instructions, num_instructions * INSTRUCTION_SIZE);
-                if(!p) {
-                    fprintf(stderr, "Instructions allocations failed. Terminating program.\n");
-                    free(instructions);
-                    fclose(fptr);
-                    exit(1);
-                } else {
-                    instructions = p;
-                    instructions[num_instructions - 1] = instr;
-                }
-                i = -1;
-                break;
-        }
-        i++;
-    }
-    fclose(fptr);
-    VMProgram program;
-    program.instructions = instructions;
-    program.num_instructions = num_instructions;
-    return program;
-}
-
-void load_program(VMProgram* program)
-{
-    int num_instructions = program->num_instructions;
-    Instruction* instructions = program->instructions;
-
-    // Perform a check to see if the program will fit in the ram
-    if(num_instructions * VM_INSTRUCTION_SIZE > BYTES_RAM) // If the program exceeds the boundaries of the ram
-    {
-        fprintf(stderr, "Loading program failed. Program of size %d exceeds ram limit of %d bytes.\n", num_instructions * VM_INSTRUCTION_SIZE, BYTES_RAM);
-        return;
-    }
-    for(int i = 0; i < num_instructions; i++) {
-        Instruction instr = instructions[i];
-
-        char opcode = instr.opcode;
-        int x = instr.x;
-        int y = instr.y;
-        int mem_index = i * VM_INSTRUCTION_SIZE;
-
-        mem[mem_index] = opcode;
-
-        unsigned char* split_x = split_int(x); // Split x integer into 4 chars and store in memory
-        for(int j = 0; j < 4; j++)
-            mem[mem_index + j + 1] = split_x[j];
-
-        unsigned char* split_y = split_int(y); // Split y integer into 4 chars and store in memory
-        for(int j = 0; j < 4; j++)
-            mem[mem_index + j + 5] = split_y[j];
-    }
-    program_size = num_instructions * VM_INSTRUCTION_SIZE;
-}
-
-void free_vm_program(VMProgram* program) {
-    free(program->instructions);
 }
 
 void vm_clock(int cycles)
@@ -253,8 +170,8 @@ void vm_print_memory()
 
 void vm_print_registers()
 {
-    for(int i = 0; i < NUM_REGISTERS; i++)
-        printf("Register %d: %d\n", i, reg[i]);
+    for(int i = 1; i < NUM_REGISTERS; i++)
+        printf("Register %d: %u\n", i, reg[i]);
 }
 
 void vm_print_info()

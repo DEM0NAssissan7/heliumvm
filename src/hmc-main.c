@@ -1,5 +1,5 @@
 #include "hmc.h"
-#include "helium.h"
+#include "programs.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -38,12 +38,6 @@ int main(int argc, char *argv[])
         unsigned char* ramdisk = create_program_ramdisk(program);
         // unsigned int* cons_ramdisk = consolidate_char_array(ramdisk, byte_size);
         write_ramdisk_to_file(ramdisk, byte_size, output_file);
-        if(verbose)
-        {
-            VMProgram output_program = parse_file(output_file);
-            printf("Program:\n");
-            print_hmc_program(&output_program);
-        }
     }
     return 0;
 }
